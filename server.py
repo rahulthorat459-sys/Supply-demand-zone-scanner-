@@ -52,7 +52,7 @@ CONSTITUENTS_CACHE_TTL_SECONDS = int(
 CONSTITUENTS_CACHE_FILE = Path(
     os.getenv(
         "NIFTY500_CONSTITUENTS_CACHE_FILE",
-        str(Path(__file__).resolve().parent.parent / "data" / "nifty500.csv"),
+        str(Path(__file__).resolve().parent / "nifty500.csv")
     )
 )
 STATIC_HTML_FILE = Path(__file__).resolve().parent / "index.html"
