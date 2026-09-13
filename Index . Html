@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="mr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Supply Demand Scanner — NIFTY 500</title>
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;background:#07111f;color:#eaf2ff;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+    .wrap{max-width:1250px;margin:auto;padding:18px}
+    .top{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+    .brand{font-size:24px;font-weight:800}.muted{color:#8fa4bf}
+    .badge{padding:7px 11px;border:1px solid #28415f;border-radius:999px;font-size:12px}
+    .ok{color:#49e28a}.warn{color:#ffd166}.bad{color:#ff6b6b}
+    .card{background:#0c192b;border:1px solid #1c324c;border-radius:16px;padding:16px;margin-top:14px;box-shadow:0 8px 30px #0004}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+    .metric{background:#0a1422;border:1px solid #1b3048;border-radius:12px;padding:14px}
+    .metric b{display:block;font-size:22px;margin-top:5px}
+    button,input,select{background:#101f33;color:#eaf2ff;border:1px solid #29435f;border-radius:9px;padding:10px}
+    button{cursor:pointer;font-weight:700}button:hover{border-color:#4d78a8}
+    .controls{display:flex;gap:8px;flex-wrap:wrap}.tablewrap{overflow:auto}
+    .candidate-tools{display:flex;justify-content:space-between;gap:12px;align-items:flex-end;flex-wrap:wrap;margin:14px 0}
+    .candidate-tools .controls{align-items:flex-end}.field{display:flex;flex-direction:column;gap:5px}
+    .field label{color:#8fa4bf;font-size:12px}.field input,.field select{min-width:145px}
+    table{width:100%;border-collapse:collapse;min-width:900px}
+    th,td{text-align:left;padding:11px;border-bottom:1px solid #1b3048;font-size:13px}
+    th{color:#91a9c4;background:#0a1524;position:sticky;top:0}
+    .empty{text-align:center;padding:34px;color:#8fa4bf}
+    .tag{padding:4px 7px;border-radius:7px;background:#122a23;color:#62e59b}
+    .danger{background:#311c20;color:#ff9292}.blue{background:#172841;color:#8fc1ff}
+    .small{font-size:12px}.map{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+    .tf{padding:10px;border:1px solid #233b56;border-radius:10px;background:#0a1524}
+    .tf b{display:block;color:#7fb6ff}.notice{line-height:1.5}
+    .footer{padding:18px 0;color:#7189a4;font-size:12px}
+    .details-btn{padding:7px 9px;font-size:12px;white-space:nowrap}
+    .modal{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:18px}
+    .modal[hidden]{display:none}
+    .modal-backdrop{position:absolute;inset:0;background:#020812cc;backdrop-filter:blur(4px)}
+    .details-panel{position:relative;width:min(900px,100%);max-height:calc(100vh - 36px);overflow:auto;background:#0c192b;border:1px solid #315174;border-radius:18px;box-shadow:0 20px 80px #000b;padding:20px}
+    .modal-close{font-size:18px;line-height:1;padding:8px 11px}
+    .details-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:16px 0}
+    .detail-metric{background:#0a1422;border:1px solid #1b3048;border-radius:10px;padding:11px}
+    .detail-metric span{display:block;color:#8fa4bf;font-size:12px;margin-bottom:4px}
+    .detail-metric b{font-size:17px}
+    .details-section{border-top:1px solid #1c324c;padding-top:14px;margin-top:16px}
+    .details-section h4{margin:0 0 10px}
+    .rule-list{display:grid;gap:7px}
+    .rule-row{display:flex;align-items:center;gap:9px;padding:9px 10px;border:1px solid #1b3048;border-radius:8px;background:#0a1422}
+    .rule-state{font-size:11px;font-weight:800;min-width:43px}
+    .rule-pass{color:#49e28a}.rule-fail{color:#ff9292}
+    .matched-list{display:flex;flex-wrap:wrap;gap:7px}
+    .matched-rule{display:inline-block;padding:6px 8px;border-radius:7px;background:#122a23;color:#62e59b;font-size:12px}
+    .zone-table{min-width:620px}
+    @media (max-width:720px){
+      .wrap{padding:12px}.brand{font-size:21px}.details-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .modal{padding:8px}.details-panel{max-height:calc(100vh - 16px);padding:14px;border-radius:14px}
+      .candidate-tools{align-items:stretch}.candidate-tools .controls{display:grid;grid-template-columns:1fr 1fr;width:100%}
+      .candidate-tools .field select,.candidate-tools .field input{min-width:0;width:100%}.candidate-tools>button{width:100%}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div>
+        <div class="brand">Supply • Demand Scanner</div>
+        <div class="muted">NIFTY 500 • Multi-Timeframe • Live Scanner Inputs</div>
+      </div>
+      <div id="status" class="badge warn">● FRONTEND READY • LIVE FEED NOT CONNECTED</div>
+    </div>
+
+    <div class="card notice">
+      <b>महत्त्वाचे:</b> Scanner फक्त verified live market data दाखवतो. Synthetic किंवा placeholder prices वापरले जात नाहीत.
+      Supply/demand zones हे actual candles वर आधारित screening heuristics आहेत; investment advice नाही.
+      <a href="https://www.nseindia.com/static/products-services/indices-nifty500-index" target="_blank" rel="noreferrer" style="color:#8fc1ff">NSE Nifty 500</a>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <h3 style="margin:0">Connection</h3>
+        <div class="controls">
+          <input id="backend" placeholder="Same-origin API or http://localhost:8080" style="min-width:280px">
+          <button onclick="connect()">Scan / Refresh</button>
+        </div>
+      </div>
+      <div id="connmsg" class="muted small" style="margin-top:9px">
+        API service उपलब्ध असल्यास live feed आपोआप जोडला जाईल.
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="metric">Universe<b id="universe">NIFTY 500</b><span class="muted">Official NSE Indices list</span></div>
+      <div class="metric">Live Rows<b id="rows">0</b><span class="muted">Verified Yahoo Finance rows</span></div>
+      <div class="metric">Matched Stocks<b id="cands">0</b><span class="muted">All six rules matched</span></div>
+      <div class="metric">Feed Status<b id="feed">OFF</b><span class="muted">No fake LIVE label</span></div>
+    </div>
+
+    <div class="card">
+      <h3>Exact Timeframe Mapping</h3>
+      <div class="map">
+        <div class="tf"><b>YIT</b>Location Yearly<br>Trend Demand<br>Execution Quarterly</div>
+        <div class="tf"><b>HYIT</b>Location Half-Yearly<br>Trend Quarterly<br>Execution Monthly</div>
+        <div class="tf"><b>QIT</b>Location Quarterly<br>Trend Monthly<br>Execution Weekly</div>
+        <div class="tf"><b>MIT</b>Location Monthly<br>Trend Weekly<br>Execution Daily<br><span class="tag">30% correction ONLY</span></div>
+        <div class="tf"><b>WIT</b>Location Weekly<br>Trend Daily<br>Execution 125 Minutes</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Scanner Rules</h3>
+      <div class="grid">
+        <div>Close(0) &gt; Close(1)<br>Close(0) &gt; Close(2)<br>Close(0) &gt; Close(3)</div>
+        <div>High(0) crosses above High(-1)<br>Price + Volume focus</div>
+        <div>Supply reaction = actual pivot high followed by ATR-sized move</div>
+        <div>Demand reaction = actual pivot low followed by ATR-sized move</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <h3 style="margin:0">LIVE SIX-RULE MATCHES</h3>
+        <span id="candidateSummary" class="muted small">No scan results yet</span>
+      </div>
+      <div class="candidate-tools">
+        <div class="controls">
+          <div class="field">
+            <label for="candidateSort">Sort by</label>
+            <select id="candidateSort">
+              <option value="strength-desc">Strength: high to low</option>
+              <option value="change-desc">Change %: high to low</option>
+              <option value="zone-asc">Supply/Demand: A–Z</option>
+              <option value="pattern-asc">Pattern Rule: A–Z</option>
+              <option value="symbol-asc">Symbol: A–Z</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="minStrength">Min Strength</label>
+            <input id="minStrength" type="number" min="0" max="100" step="0.1" placeholder="Any">
+          </div>
+          <div class="field">
+            <label for="minChange">Min Change %</label>
+            <input id="minChange" type="number" step="0.01" placeholder="Any">
+          </div>
+          <div class="field">
+            <label for="zoneFilter">Zone Type</label>
+            <select id="zoneFilter">
+              <option value="">All zones</option>
+              <option value="supply">Supply</option>
+              <option value="demand">Demand</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="patternFilter">Pattern Rule</label>
+            <select id="patternFilter">
+              <option value="">All rules</option>
+              <option value="Supply: 1st break → sideways → 2nd break = UP Achievement">Supply achievement</option>
+              <option value="Demand: 1st break → sideways → 2nd break = DOWN Achievement">Demand achievement</option>
+            </select>
+          </div>
+        </div>
+        <button type="button" onclick="resetCandidateFilters()">Clear Filters</button>
+      </div>
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr><th>Symbol</th><th>Last Price</th><th>Change %</th><th>Zone</th><th>Pattern Rule</th><th>Low</th><th>High</th><th>Strength</th><th>Base Date</th><th>Details</th></tr>
+          </thead>
+          <tbody id="candidateBody"><tr><td colspan="10" class="empty">Live feed connect झाल्यावर six-rule matches दिसतील.</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="detailsModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="detailsTitle">
+      <div class="modal-backdrop" onclick="closeDetails()"></div>
+      <section class="details-panel">
+        <div class="top">
+          <div>
+            <h3 id="detailsTitle" style="margin:0">Candidate Details</h3>
+            <div id="detailsSubtitle" class="muted small" style="margin-top:5px"></div>
+          </div>
+          <button type="button" class="modal-close" onclick="closeDetails()" aria-label="Close details">×</button>
+        </div>
+        <div id="detailsMetrics" class="details-grid"></div>
+        <div class="details-section">
+          <h4>Six scanner rules</h4>
+          <div id="detailsRules" class="rule-list"></div>
+        </div>
+        <div class="details-section">
+          <h4>Rules that produced this match</h4>
+          <div id="detailsMatchedRules" class="matched-list"></div>
+        </div>
+        <div class="details-section">
+          <h4>All detected zones for this symbol</h4>
+          <div class="tablewrap">
+            <table class="zone-table">
+              <thead><tr><th>Type</th><th>Low</th><th>High</th><th>Strength</th><th>Base Date</th><th>Reaction %</th></tr></thead>
+              <tbody id="detailsZones"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="card">
+      <div class="top">
+        <h3 style="margin:0">LIVE MARKET DATA</h3>
+        <span id="updated" class="muted small">Not connected</span>
+      </div>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Symbol</th><th>Price</th><th>Change</th><th>%</th><th>Volume</th><th>Source</th></tr></thead>
+          <tbody id="marketBody"><tr><td colspan="6" class="empty">No verified market data loaded.</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="footer">Market data Yahoo Finance कडून येतो आणि delayed असू शकतो. Scanner research साठी आहे; guaranteed profit किंवा investment advice नाही.</div>
+  </div>
+
+  <script>
+    const $ = id => document.getElementById(id);
+    const sameOrigin = location.protocol !== 'file:';
+    let base = sameOrigin ? '' : 'http://localhost:8080';
+    let candidateRows = [];
+    let candidateSourceRows = [];
+    let marketRecords = new Map();
+    let matchedStockCount = 0;
+    let scannerRules = [
+      'Close(0) > Close(1)',
+      'Close(0) > Close(2)',
+      'Close(0) > Close(3)',
+      'High(0) crosses above High(-1)',
+      'Supply: 1st break → sideways → 2nd break = UP Achievement',
+      'Demand: 1st break → sideways → 2nd break = DOWN Achievement'
+    ];
+    $('backend').value = base;
+
+    function setStatus(text, cls) {
+      $('status').textContent = '● ' + text;
+      $('status').className = 'badge ' + cls;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '—').replace(/[&<>"']/g, char => ({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+      }[char]));
+    }
+
+    function money(value) {
+      const number = Number(value);
+      return Number.isFinite(number) ? number.toLocaleString('en-IN', { maximumFractionDigits: 2 }) : '—';
+    }
+
+    function renderMarket(rows, source) {
+      $('rows').textContent = rows.length;
+      $('feed').textContent = rows.length ? 'LIVE' : 'OFF';
+      if (!rows.length) {
+        $('marketBody').innerHTML = '<tr><td colspan="6" class="empty">No verified market data loaded.</td></tr>';
+        return;
+      }
+      $('marketBody').innerHTML = rows.slice(0, 500).map(row => `
+        <tr>
+          <td><b>${escapeHtml(row.symbol)}</b></td>
+          <td>${money(row.last)}</td>
+          <td>${money(row.change)}</td>
+          <td>${money(row.changePct)}%</td>
+          <td>${money(row.volume)}</td>
+          <td>${escapeHtml(source || 'Yahoo Finance')}</td>
+        </tr>`).join('');
+    }
+
+    function groupCandidates(rows) {
+      const grouped = new Map();
+      rows.forEach(row => {
+        const existing = grouped.get(row.symbol);
+        const currentDate = row.zone?.baseDate || '';
+        if (!existing) {
+          grouped.set(row.symbol, {
+            ...row,
+            zone: {...row.zone},
+            zoneTypes: new Set(row.zone?.type ? [row.zone.type] : []),
+            patterns: new Set(row.pattern ? [row.pattern] : [])
+          });
+          return;
+        }
+        if (row.zone?.type) existing.zoneTypes.add(row.zone.type);
+        if (row.pattern) existing.patterns.add(row.pattern);
+        if (currentDate > (existing.zone?.baseDate || '')) {
+          existing.zone = {...row.zone};
+        }
+      });
+      const visible = Array.from(grouped.values()).map(row => ({
+        ...row,
+        zoneTypes: Array.from(row.zoneTypes).sort(),
+        patterns: Array.from(row.patterns).sort(),
+        zone: {
+          ...row.zone,
+          type: Array.from(row.zoneTypes).sort().join(' + ')
+        },
+        pattern: Array.from(row.patterns).sort().join(' / ')
+      }));
+      return visible;
+    }
+
+    function renderCandidateRows(rows) {
+      if (!rows.length) {
+        $('candidateBody').innerHTML = '<tr><td colspan="10" class="empty">No candidates match the current filters.</td></tr>';
+        return;
+      }
+      $('candidateBody').innerHTML = rows.map(row => `
+        <tr>
+          <td><b>${escapeHtml(row.symbol)}</b></td>
+          <td>${money(row.last)}</td>
+          <td>${money(row.changePct)}%</td>
+          <td>${escapeHtml(row.zone?.type)}</td>
+          <td>${escapeHtml(row.pattern)}</td>
+          <td>${money(row.zone?.low)}</td>
+          <td>${money(row.zone?.high)}</td>
+          <td>${money(row.zone?.strength)}</td>
+          <td>${escapeHtml(row.zone?.baseDate)}</td>
+          <td><button type="button" class="details-btn" data-symbol="${escapeHtml(row.symbol)}" onclick="openDetails(this.dataset.symbol)">View Details</button></td>
+        </tr>`).join('');
+    }
+
+    function applyCandidateView() {
+      const zoneFilter = $('zoneFilter').value;
+      const patternFilter = $('patternFilter').value;
+      const minStrength = Number.parseFloat($('minStrength').value);
+      const minChange = Number.parseFloat($('minChange').value);
+      const sortBy = $('candidateSort').value;
+      const filtered = candidateRows.filter(row => {
+        if (zoneFilter && !row.zoneTypes.includes(zoneFilter)) return false;
+        if (patternFilter && !row.patterns.includes(patternFilter)) return false;
+        if (Number.isFinite(minStrength) && Number(row.zone?.strength) < minStrength) return false;
+        if (Number.isFinite(minChange) && Number(row.changePct) < minChange) return false;
+        return true;
+      });
+      filtered.sort((left, right) => {
+        if (sortBy === 'strength-desc') return (Number(right.zone?.strength) || -Infinity) - (Number(left.zone?.strength) || -Infinity);
+        if (sortBy === 'change-desc') return (Number(right.changePct) || -Infinity) - (Number(left.changePct) || -Infinity);
+        if (sortBy === 'zone-asc') return left.zone.type.localeCompare(right.zone.type);
+        if (sortBy === 'pattern-asc') return left.pattern.localeCompare(right.pattern);
+        return left.symbol.localeCompare(right.symbol);
+      });
+      $('candidateSummary').textContent = 'Showing ' + filtered.length + ' of ' + matchedStockCount + ' matched stocks';
+      renderCandidateRows(filtered);
+    }
+
+    function renderCandidates(rows, count) {
+      matchedStockCount = count;
+      candidateRows = groupCandidates(rows);
+      $('cands').textContent = matchedStockCount;
+      applyCandidateView();
+    }
+
+    function resetCandidateFilters() {
+      $('candidateSort').value = 'strength-desc';
+      $('minStrength').value = '';
+      $('minChange').value = '';
+      $('zoneFilter').value = '';
+      $('patternFilter').value = '';
+      applyCandidateView();
+    }
+
+    function latestCandleRuleChecks(record) {
+      const candles = record?.candles || [];
+      if (candles.length < 4) return [false, false, false, false];
+      const current = candles[candles.length - 1];
+      const previous1 = candles[candles.length - 2];
+      const previous2 = candles[candles.length - 3];
+      const previous3 = candles[candles.length - 4];
+      const close = current.close;
+      return [
+        close != null && previous1.close != null && close > previous1.close,
+        close != null && previous2.close != null && close > previous2.close,
+        close != null && previous3.close != null && close > previous3.close,
+        current.high != null && previous1.high != null && current.high > previous1.high
+      ];
+    }
+
+    function openDetails(symbol) {
+      const record = marketRecords.get(symbol);
+      if (!record) return;
+      const matches = candidateSourceRows.filter(row => row.symbol === symbol);
+      const latestMatch = [...matches].sort((left, right) =>
+        (right.zone?.baseDate || '').localeCompare(left.zone?.baseDate || '')
+      )[0];
+      const latestZone = latestMatch?.zone || [...(record.zones || [])].sort((left, right) =>
+        (right.baseDate || '').localeCompare(left.baseDate || '')
+      )[0] || {};
+      const zoneTypes = [...new Set(matches.map(row => row.zone?.type).filter(Boolean))];
+      const patternPasses = new Set(matches.map(row => row.pattern).filter(Boolean));
+      const directPasses = latestCandleRuleChecks(record);
+      const rulePasses = [
+        ...directPasses,
+        patternPasses.has(scannerRules[4]),
+        patternPasses.has(scannerRules[5])
+      ];
+      const matchedRules = [...new Set(matches.flatMap(row => row.matchedRules || []))];
+
+      $('detailsTitle').textContent = symbol + ' • Candidate Details';
+      $('detailsSubtitle').textContent = record.name || 'Existing live market record';
+      $('detailsMetrics').innerHTML = [
+        ['Symbol', record.symbol],
+        ['Last Price', money(record.last)],
+        ['Change %', money(record.changePct) + '%'],
+        ['Strength', money(latestZone.strength)],
+        ['Supply / Demand', zoneTypes.join(' + ') || latestZone.type],
+        ['Zone Low', money(latestZone.low)],
+        ['Zone High', money(latestZone.high)],
+        ['Base Date', latestZone.baseDate]
+      ].map(([label, value]) => `
+        <div class="detail-metric">
+          <span>${escapeHtml(label)}</span>
+          <b>${escapeHtml(value)}</b>
+        </div>`).join('');
+
+      $('detailsRules').innerHTML = scannerRules.map((rule, index) => `
+        <div class="rule-row">
+          <span class="rule-state ${rulePasses[index] ? 'rule-pass' : 'rule-fail'}">${rulePasses[index] ? 'PASS' : 'FAIL'}</span>
+          <span>${escapeHtml(rule)}</span>
+        </div>`).join('');
+
+      $('detailsMatchedRules').innerHTML = matchedRules.length
+        ? matchedRules.map(rule => `<span class="matched-rule">${escapeHtml(rule)}</span>`).join('')
+        : '<span class="muted small">No matched-rule metadata returned for this symbol.</span>';
+
+      const zones = [...(record.zones || [])].sort((left, right) =>
+        (right.baseDate || '').localeCompare(left.baseDate || '')
+      );
+      $('detailsZones').innerHTML = zones.length
+        ? zones.map(zone => `
+          <tr>
+            <td>${escapeHtml(zone.type)}</td>
+            <td>${money(zone.low)}</td>
+            <td>${money(zone.high)}</td>
+            <td>${money(zone.strength)}</td>
+            <td>${escapeHtml(zone.baseDate)}</td>
+            <td>${money(zone.reactionMovePct)}%</td>
+          </tr>`).join('')
+        : '<tr><td colspan="6" class="empty">No detected zones returned for this symbol.</td></tr>';
+
+      $('detailsModal').hidden = false;
+      document.body.style.overflow = 'hidden';
+      $('detailsModal').querySelector('.modal-close').focus();
+    }
+
+    function closeDetails() {
+      $('detailsModal').hidden = true;
+      document.body.style.overflow = '';
+    }
+
+    async function connect() {
+      base = $('backend').value.trim().replace(/\/$/, '');
+      $('connmsg').textContent = 'Connecting to official constituent and market-data sources…';
+      setStatus('LOADING VERIFIED MARKET DATA', 'warn');
+      try {
+        const statusResponse = await fetch(base + '/api/live/status', { cache: 'no-store' });
+        if (!statusResponse.ok) throw new Error('Status request failed (' + statusResponse.status + ')');
+        const status = await statusResponse.json();
+        const dataResponse = await fetch(base + '/api/live/market-data?universe=NIFTY500&lookback=500', { cache: 'no-store' });
+        const payload = await dataResponse.json();
+        if (!dataResponse.ok || payload.ok === false) {
+          throw new Error(payload.error?.message || 'Market-data request failed (' + dataResponse.status + ')');
+        }
+        const records = Array.isArray(payload.data) ? payload.data : [];
+        const candidates = Array.isArray(payload.candidates) ? payload.candidates : [];
+        marketRecords = new Map(records.map(record => [record.symbol, record]));
+        candidateSourceRows = candidates;
+        if (Array.isArray(payload.meta?.scannerRules) && payload.meta.scannerRules.length === 6) {
+          scannerRules = payload.meta.scannerRules;
+        }
+        renderMarket(records, payload.meta?.source);
+        renderCandidates(candidates, payload.summary?.candidateSymbols ?? 0);
+        const returned = payload.summary?.symbolsReturned ?? records.length;
+        const failed = payload.summary?.symbolsFailed ?? 0;
+        $('updated').textContent = 'Latest session: ' + (payload.meta?.latestSession || '—') + ' • ' + (payload.meta?.cached ? 'cached' : 'fresh');
+        setStatus('LIVE MARKET DATA CONNECTED', 'ok');
+        $('connmsg').textContent = 'Verified response: ' + returned + ' symbols, ' + (payload.summary?.candidateSymbols ?? 0) + ' matching stocks, ' + failed + ' failed symbols. Source: ' + (status.marketData?.provider || 'configured backend') + '.';
+      } catch (error) {
+        $('feed').textContent = 'OFF';
+        setStatus('LIVE FEED UNAVAILABLE', 'bad');
+        $('connmsg').textContent = 'Live data उपलब्ध नाही: ' + error.message + '. Synthetic data दाखवले जाणार नाही.';
+        console.error(error);
+      }
+    }
+
+    ['candidateSort', 'minStrength', 'minChange', 'zoneFilter', 'patternFilter'].forEach(id => {
+      $(id).addEventListener(id.startsWith('min') ? 'input' : 'change', applyCandidateView);
+    });
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && !$('detailsModal').hidden) closeDetails();
+    });
+
+    if (sameOrigin) {
+      setStatus('FRONTEND READY • CONNECTING', 'warn');
+      connect();
+    } else {
+      setStatus('FRONTEND READY • FILE MODE', 'ok');
+    }
+  </script>
+</body>
+</html>
