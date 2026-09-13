@@ -55,7 +55,7 @@ CONSTITUENTS_CACHE_FILE = Path(
         str(Path(__file__).resolve().parent.parent / "data" / "nifty500.csv"),
     )
 )
-STATIC_HTML_FILE = Path(__file__).resolve().parent.parent / "public" / "index.html"
+STATIC_HTML_FILE = Path(__file__).resolve().parent / "index.html"
 HTTP_TIMEOUT_SECONDS = float(os.getenv("MARKET_DATA_TIMEOUT_SECONDS", "20"))
 CONSTITUENTS_TIMEOUT_SECONDS = float(
     os.getenv("NIFTY500_CONSTITUENTS_TIMEOUT_SECONDS", "60")
