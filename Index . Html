@@ -220,7 +220,7 @@
   <script>
     const $ = id => document.getElementById(id);
     const sameOrigin = location.protocol !== 'file:';
-    let base = sameOrigin ? '' : 'http://localhost:8080';
+    let base = sameOrigin ? location.origin : 'http://localhost:8080';';
     let candidateRows = [];
     let candidateSourceRows = [];
     let marketRecords = new Map();
