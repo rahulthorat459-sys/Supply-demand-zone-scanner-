@@ -69,8 +69,7 @@ const timeframeMap={YIT:{location:'Yearly',trend:'Monthly',execution:'Weekly',co
 function showTF(tf){activeTF=tf;const x=timeframeMap[tf];document.querySelectorAll('.tfbtn').forEach(b=>b.classList.toggle('active',b.dataset.tf===tf));$('tfDetail').innerHTML=`<div class="tfbox"><b>Location</b>${x.location}</div><div class="tfbox"><b>Trend</b>${x.trend}</div><div class="tfbox"><b>Execution</b>${x.execution}</div><div class="tfbox"><b>Correction</b>${x.correction}</div>`}
 showTF('YIT');
 async function getJson(url){const r=await fetch(url,{cache:'no-store'});const t=await r.text();if(!r.ok)throw Error('HTTP '+r.status+(t?': '+t.slice(0,180):''));if(!t.trim())throw Error('Empty response from server');try{return JSON.parse(t)}catch{throw Error('Server response JSON नाही')}}
-let activeTF='YIT';
-async function scan(){ $('msg').async function scan(){
+$('msg').textContent=rows.length?('Verified real data received: '+returned+' rows. UP Trend Supply setups and separate demand-zone prices are shown.'):'No verified market data returned.';
   $('msg').textContent=activeTF+' — NIFTY 500 real market data scan सुरू आहे…';
   setStatus('SCANNING');
 
